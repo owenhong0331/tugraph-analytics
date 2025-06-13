@@ -30,14 +30,20 @@ import org.apache.calcite.rel.type.RelDataType;
 
 public class PhysicGraphMatchRelNode extends GraphMatch implements PhysicRelNode<RuntimeGraph> {
 
+    // 添加 isOptional 字段
+    private final boolean isOptionalMatch;
+
     public PhysicGraphMatchRelNode(RelOptCluster cluster,
                                    RelTraitSet traits,
                                    RelNode input,
                                    IMatchNode pathPattern,
-                                   RelDataType rowType,boolean isOptional) {
-        super(cluster, traits, input, pathPattern, rowType,isOptional);
+                                   RelDataType rowType
+                                   boolean isOptionalMatch) { // <--- NEW PARAMETER)
+        super(cluster, traits, input, pathPattern, rowType);
     }
-
+    public boolean isOptionalMatch() { // <--- NEW GETTER
+        return isOptionalMatch;
+    }
     @SuppressWarnings("unchecked")
     @Override
     public RuntimeGraph translate(QueryContext context) {
@@ -47,10 +53,11 @@ public class PhysicGraphMatchRelNode extends GraphMatch implements PhysicRelNode
     }
 
     @Override
-    public GraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType,boolean isOptional) {
-        return new PhysicGraphMatchRelNode(getCluster(), traitSet, input, pathPattern, rowType, isOptional);
+    public GraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType) {
+        return new PhysicGraphMatchRelNode(getCluster(), traitSet, input, pathPattern, rowType, isOptionalMatch);
     }
 
+    
     @Override
     public String showSQL() {
         return null;

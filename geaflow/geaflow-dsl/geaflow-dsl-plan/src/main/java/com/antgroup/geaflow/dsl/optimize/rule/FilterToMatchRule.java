@@ -44,7 +44,8 @@ public class FilterToMatchRule extends RelOptRule {
 
         MatchFilter matchFilter = MatchFilter.create(pathPattern,
             filter.getCondition(), pathPattern.getPathSchema());
-        LogicalGraphMatch newMatch = (LogicalGraphMatch) graphMatch.copy(matchFilter);
+        LogicalGraphMatch newMatch = (LogicalGraphMatch) graphMatch.copy(graphMatch.getTraitSet(),
+            graphMatch.getInput(), matchFilter, matchFilter.getRowType(), graphMatch.getIsOptional());
         call.transformTo(newMatch);
     }
 }

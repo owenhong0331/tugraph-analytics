@@ -42,4 +42,34 @@ public class GQLValidateFilterStatementTest {
             .validate()
             .expectException("At line 4, column 8: Table 'b' not found");
     }
+
+    @Test
+    public void testSimpleOptionalMatch() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user WHERE a.id = '1')-[e:knows]->(b:user)\n"
+                + "RETURN b.name, b as _b\n" + "THEN\n" + "FILTER name IS NOT NULL AND _b.id "
+                + "> 10")
+            .validate()
+            .expectValidateType("RecordType(VARCHAR name, Vertex:RecordType:peek(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) _b)");
+    }
+
+    @Test
+    public void testNotUseAliasOptionalMatch() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user WHERE a.id = '1')-[e:knows]->(b:user)\n"
+                + "RETURN b.name, b as _b\n" + "THEN\n" + "FILTER b.name IS NOT NULL AND _b.id "
+                + "> 10")
+            .validate()
+            .expectException("At line 4, column 8: Table 'b' not found");
+    }
+
+    @Test
+    public void testOptionalMatchWithNull() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user WHERE a.id = '1')-[e:knows]->(b:user)\n"
+                + "RETURN b.name, b as _b\n" + "THEN\n" + "FILTER _b IS NULL")
+            .validate()
+            .expectValidateType("RecordType(VARCHAR name, Vertex:RecordType:peek(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) _b)");
+    }
+
 }

@@ -494,7 +494,8 @@ data: {
 
     extendLeafQueryParserMethods: [
         "GQLMatchStatement",
-        "GQLGraphAlgorithmCall"
+        "GQLGraphAlgorithmCall",
+        "SqlOptionalMatchPattern"
     ]
     # List of files in @includes directory that have parser method
     # implementations for parsing custom SQL statements, literals or types

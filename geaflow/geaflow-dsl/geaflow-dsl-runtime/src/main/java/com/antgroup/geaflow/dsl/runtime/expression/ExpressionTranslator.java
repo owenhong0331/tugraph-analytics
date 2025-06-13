@@ -441,7 +441,7 @@ public class ExpressionTranslator implements RexVisitor<Expression> {
             matchNode.getCluster().getTypeFactory());
         GraphScan emptyScan = LogicalGraphScan.emptyScan(matchNode.getCluster(), graphRecordType);
         GraphMatch graphMatch = LogicalGraphMatch.create(matchNode.getCluster(), emptyScan, matchNode,
-            matchNode.getPathSchema());
+            matchNode.getPathSchema(),false);
         StepLogicalPlan matchPlan = planTranslator.translate(graphMatch, logicalPlanSet);
 
         SqlAggFunction aggFunction = (SqlAggFunction) call.getOperator();

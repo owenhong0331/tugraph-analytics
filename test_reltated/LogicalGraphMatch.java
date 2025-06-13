@@ -27,19 +27,23 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 
 public class LogicalGraphMatch extends GraphMatch {
+    private final boolean isOptionalMatch;
 
     protected LogicalGraphMatch(RelOptCluster cluster, RelTraitSet traits,
-                                RelNode input, IMatchNode pathPattern, RelDataType rowType,boolean isOptional) {
-        super(cluster, traits, input, pathPattern, rowType,isOptional);
+                                RelNode input, IMatchNode pathPattern, RelDataType rowType) {
+        super(cluster, traits, input, pathPattern, rowType);
+        this.isOptionalMatch = isOptionalMatch;
     }
-
+    public boolean isOptionalMatch() {
+        return isOptionalMatch;
+    }
     @Override
-    public LogicalGraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType,boolean isOptional) {
-        return new LogicalGraphMatch(getCluster(), traitSet, input, pathPattern, rowType,isOptional);
+    public LogicalGraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType) {
+        return new LogicalGraphMatch(getCluster(), traitSet, input, pathPattern, rowType);
     }
 
     public static LogicalGraphMatch create(RelOptCluster cluster, RelNode input,
-                                           IMatchNode pathPattern, RelDataType rowType,boolean isOptional) {
-        return new LogicalGraphMatch(cluster, cluster.traitSet(), input, pathPattern, rowType,isOptional);
+                                           IMatchNode pathPattern, RelDataType rowType) {
+        return new LogicalGraphMatch(cluster, cluster.traitSet(), input, pathPattern, rowType, isOptionalMatch);
     }
 }

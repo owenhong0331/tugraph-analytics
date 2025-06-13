@@ -130,6 +130,10 @@ public class BinaryStringVertex implements RowVertex, KryoSerializable {
             case VertexType.LABEL_FIELD_POSITION:
                 return label;
             default:
+                // For optional match, value might be null, return null for any field access
+                if (value == null) {
+                    return null;
+                }
                 return value.getField(i - 2, type);
         }
     }

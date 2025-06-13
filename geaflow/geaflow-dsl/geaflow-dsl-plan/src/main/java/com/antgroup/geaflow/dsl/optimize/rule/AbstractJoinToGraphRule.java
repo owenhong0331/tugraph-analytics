@@ -906,7 +906,8 @@ public abstract class AbstractJoinToGraphRule extends RelOptRule {
         if (newPathPattern == null) {
             return null;
         }
-        GraphMatch newGraphMatch = graphMatch.copy(newPathPattern);
+        GraphMatch newGraphMatch = graphMatch.copy(graphMatch.getTraitSet(), graphMatch.getInput(),
+            newPathPattern, newPathPattern.getRowType(), graphMatch.getIsOptional());
         // Add the original Projects from the GraphMatch branch, filtering out fields that
         // no longer exist after rebuilding GraphMatch inputs.
         List<RexNode> oldProjects = project.getProjects().stream().filter(prj -> {

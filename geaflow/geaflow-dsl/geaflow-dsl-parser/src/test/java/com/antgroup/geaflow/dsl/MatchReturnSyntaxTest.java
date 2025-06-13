@@ -47,6 +47,13 @@ public class MatchReturnSyntaxTest extends BaseDslTest {
     }
 
     @Test
+    public void testGQLOptionalMatch() throws Exception {
+        String unParseSql = parseSqlAndUnParse("GQLOptionalMatch.sql");
+        String unParseStmts = parseStmtsAndUnParse(parseStmtsAndUnParse(unParseSql));
+        Assert.assertEquals(unParseStmts, unParseSql);
+    }
+
+    @Test
     public void testGQLSelectFromMatch() throws Exception {
         String unParseSql = parseSqlAndUnParse("GQLSelectFromMatch.sql");
         String unParseStmts = parseStmtsAndUnParse(parseStmtsAndUnParse(unParseSql));
@@ -77,6 +84,12 @@ public class MatchReturnSyntaxTest extends BaseDslTest {
     @Test
     public void testGQLMatchOrder() throws Exception {
         String unParseSql = parseSqlAndUnParse("GQLMatchOrder.sql");
+        String unParseStmts = parseStmtsAndUnParse(parseStmtsAndUnParse(unParseSql));
+        Assert.assertEquals(unParseStmts, unParseSql);
+    }
+    @Test
+    public void testUnion() throws Exception {
+        String unParseSql = parseSqlAndUnParse("TestUnion.sql");
         String unParseStmts = parseStmtsAndUnParse(parseStmtsAndUnParse(unParseSql));
         Assert.assertEquals(unParseStmts, unParseSql);
     }

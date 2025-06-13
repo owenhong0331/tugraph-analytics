@@ -20,6 +20,7 @@
 package com.antgroup.geaflow.dsl.runtime.plan.converters;
 
 import com.antgroup.geaflow.dsl.rel.logical.LogicalGraphMatch;
+import com.antgroup.geaflow.dsl.rel.logical.LogicalGraphMatch;
 import com.antgroup.geaflow.dsl.runtime.plan.PhysicConvention;
 import com.antgroup.geaflow.dsl.runtime.plan.PhysicGraphMatchRelNode;
 import org.apache.calcite.plan.Convention;
@@ -39,11 +40,15 @@ public class ConvertGraphMatchRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalGraphMatch graphMatch = (LogicalGraphMatch) rel;
+
         RelTraitSet relTraitSet = graphMatch.getTraitSet().replace(PhysicConvention.INSTANCE);
         RelNode convertedInput = convert(graphMatch.getInput(),
             graphMatch.getInput().getTraitSet().replace(PhysicConvention.INSTANCE));
 
+         // 检测是否是 OPTIONAL MATCH
+        // boolean isOptional = graphMatch instanceof SqlOptionalMatchPattern;
+
         return new PhysicGraphMatchRelNode(graphMatch.getCluster(), relTraitSet,
-            convertedInput, graphMatch.getPathPattern(), graphMatch.getRowType(),graphMatch.getIsOptional());
+            convertedInput, graphMatch.getPathPattern(), graphMatch.getRowType(), graphMatch.isOptionalMatch());
     }
 }

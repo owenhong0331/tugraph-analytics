@@ -19,7 +19,7 @@
 
 package com.antgroup.geaflow.dsl.sqlnode;
 
-import com.antgroup.geaflow.dsl.operator.SqlMatchPatternOperator;
+import com.antgroup.geaflow.dsl.operator.SqlOptionalMatchPatternOperator;
 import java.util.List;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
@@ -32,7 +32,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.util.ImmutableNullableList;
 
-public class SqlMatchPattern extends SqlCall {
+public class SqlOptionalMatchPattern extends SqlCall {
 
     private SqlNode from;
 
@@ -43,10 +43,8 @@ public class SqlMatchPattern extends SqlCall {
     private SqlNodeList orderBy;
 
     private SqlNode limit;
-
-    private boolean isoptional;
-
-    public SqlMatchPattern(SqlParserPos pos, SqlNode from, SqlNodeList pathPatterns,
+    
+    public SqlOptionalMatchPattern(SqlParserPos pos, SqlNode from, SqlNodeList pathPatterns,
                            SqlNode where, SqlNodeList orderBy, SqlNode limit) {
         super(pos);
         this.from = from;
@@ -54,23 +52,11 @@ public class SqlMatchPattern extends SqlCall {
         this.where = where;
         this.orderBy = orderBy;
         this.limit = limit;
-        this.isoptional = false;
-    }
-    
-    public SqlMatchPattern(SqlParserPos pos, SqlNode from, SqlNodeList pathPatterns,
-                           SqlNode where, SqlNodeList orderBy, SqlNode limit,boolean isoptional) {
-        super(pos);
-        this.from = from;
-        this.pathPatterns = pathPatterns;
-        this.where = where;
-        this.orderBy = orderBy;
-        this.limit = limit;
-        this.isoptional = isoptional;
     }
 
     @Override
     public SqlOperator getOperator() {
-        return SqlMatchPatternOperator.INSTANCE;
+        return SqlOptionalMatchPatternOperator.INSTANCE;
     }
 
     @Override
@@ -139,12 +125,7 @@ public class SqlMatchPattern extends SqlCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        if (isoptional == true) {
-            writer.keyword("Optional Match");
-        } else {
-            writer.keyword("Match");
-        }
-        
+        writer.keyword("OPTONALMatch");
         if (pathPatterns != null) {
             for (int i = 0; i < pathPatterns.size(); i++) {
                 if (i > 0) {
@@ -173,10 +154,6 @@ public class SqlMatchPattern extends SqlCall {
             writer.keyword("LIMIT");
             limit.unparse(writer, leftPrec, rightPrec);
         }
-    }
-    
-    public boolean getIsOptional() {
-        return isoptional;
     }
 
     public SqlNodeList getPathPatterns() {
