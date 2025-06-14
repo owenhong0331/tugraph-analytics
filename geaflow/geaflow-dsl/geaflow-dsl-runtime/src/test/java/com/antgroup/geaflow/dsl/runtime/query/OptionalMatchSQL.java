@@ -23,18 +23,28 @@ import org.testng.annotations.Test;
 
 public class OptionalMatchSQL {
 
+    // @Test
+    // public void testOptional_001() throws Exception {
+    //     QueryTester
+    //         .build()
+    //         .withQueryPath("/query/optional_match.sql")
+    //         .execute()
+    //         .checkSinkResult();
+    //     // QueryTester
+    //     //     .build()
+    //     //     .withGraphDefine("/query/modern_graph.sql")
+    //     //     .withQueryPath("/query/optional_match.sql")
+    //     //     .execute()
+    //     //     .checkSinkResult();
+    // }
+
     @Test
     public void testOptional_001() throws Exception {
         QueryTester
             .build()
-            .withQueryPath("/query/optional_match.sql")
+            // .withGraphDefine("/query/modern_graph.sql")
+            .withQueryPath("/query/optional_match2.sql")
             .execute()
             .checkSinkResult();
-        // QueryTester
-        //     .build()
-        //     .withGraphDefine("/query/modern_graph.sql")
-        //     .withQueryPath("/query/optional_match.sql")
-        //     .execute()
-        //     .checkSinkResult();
     }
 }

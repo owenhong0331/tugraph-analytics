@@ -24,4 +24,13 @@ import com.antgroup.geaflow.dsl.common.data.Row;
 public interface StepBoolFunction extends StepFunction {
 
     boolean filter(Row path);
+
+    /**
+     * Returns true if this is an optional filter operation.
+     * Optional filters return null paths when condition is not satisfied,
+     * rather than filtering them out completely.
+     */
+    default boolean isOptional() {
+        return false;
+    }
 }

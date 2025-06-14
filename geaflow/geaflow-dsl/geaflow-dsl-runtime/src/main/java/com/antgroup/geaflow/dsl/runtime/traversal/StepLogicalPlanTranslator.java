@@ -45,6 +45,7 @@ import com.antgroup.geaflow.dsl.rel.match.MatchAggregate;
 import com.antgroup.geaflow.dsl.rel.match.MatchDistinct;
 import com.antgroup.geaflow.dsl.rel.match.MatchExtend;
 import com.antgroup.geaflow.dsl.rel.match.MatchFilter;
+import com.antgroup.geaflow.dsl.rel.match.OptionalMatchFilter;
 import com.antgroup.geaflow.dsl.rel.match.MatchJoin;
 import com.antgroup.geaflow.dsl.rel.match.MatchPathModify;
 import com.antgroup.geaflow.dsl.rel.match.MatchPathSort;
@@ -71,6 +72,7 @@ import com.antgroup.geaflow.dsl.runtime.function.graph.StepAggExpressionFunction
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepAggregateFunction;
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepBoolFunction;
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepBoolFunctionImpl;
+import com.antgroup.geaflow.dsl.runtime.function.graph.OptionalStepBoolFunctionImpl;
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepJoinFunction;
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepJoinFunctionImpl;
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepKeyExpressionFunctionImpl;
@@ -314,7 +316,15 @@ public class StepLogicalPlanTranslator {
 
             Expression condition =
                 ExpressionTranslator.of(inputPath, logicalPlanSet).translate(filter.getCondition());
-            StepBoolFunction fn = new StepBoolFunctionImpl(condition);
+
+            // Check if this is an optional filter
+            StepBoolFunction fn;
+            if (filter instanceof OptionalMatchFilter) {
+                fn = new OptionalStepBoolFunctionImpl(condition);
+            } else {
+                fn = new StepBoolFunctionImpl(condition);
+            }
+
             return input.filter(fn).withModifyGraphSchema(input.getModifyGraphSchema())
                 .withOutputPathSchema(outputPath);
         }

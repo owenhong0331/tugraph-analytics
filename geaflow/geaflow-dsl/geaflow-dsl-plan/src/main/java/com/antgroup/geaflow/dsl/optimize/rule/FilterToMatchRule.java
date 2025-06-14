@@ -22,6 +22,7 @@ package com.antgroup.geaflow.dsl.optimize.rule;
 import com.antgroup.geaflow.dsl.rel.logical.LogicalGraphMatch;
 import com.antgroup.geaflow.dsl.rel.match.IMatchNode;
 import com.antgroup.geaflow.dsl.rel.match.MatchFilter;
+import com.antgroup.geaflow.dsl.rel.match.OptionalMatchFilter;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -42,8 +43,16 @@ public class FilterToMatchRule extends RelOptRule {
 
         IMatchNode pathPattern = graphMatch.getPathPattern();
 
-        MatchFilter matchFilter = MatchFilter.create(pathPattern,
-            filter.getCondition(), pathPattern.getPathSchema());
+        // Create OptionalMatchFilter if the GraphMatch is optional, otherwise create regular MatchFilter
+        MatchFilter matchFilter;
+        if (graphMatch.getIsOptional()) {
+            matchFilter = OptionalMatchFilter.create(pathPattern,
+                filter.getCondition(), pathPattern.getPathSchema());
+        } else {
+            matchFilter = MatchFilter.create(pathPattern,
+                filter.getCondition(), pathPattern.getPathSchema());
+        }
+
         LogicalGraphMatch newMatch = (LogicalGraphMatch) graphMatch.copy(graphMatch.getTraitSet(),
             graphMatch.getInput(), matchFilter, matchFilter.getRowType(), graphMatch.getIsOptional());
         call.transformTo(newMatch);

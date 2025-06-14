@@ -18,7 +18,7 @@
  */
 
 
-OPTIONAL MATCH (a:person where id = 1)-[e:knows where e.weight > 0.4]->(b:person) RETURN a;
+OPTIONAL MATCH (a:person where id = 1)-[e:knows where e.weight > 0.4]->(b:person where id = 1) RETURN a;
 
 -- 无标签顶点带反向关系和条件
 OPTIONAL MATCH (a WHERE name = 'marko')<-[e]-(b) WHERE a.name <> b.name RETURN e;

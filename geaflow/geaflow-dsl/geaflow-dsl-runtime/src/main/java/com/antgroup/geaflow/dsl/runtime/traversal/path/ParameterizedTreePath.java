@@ -148,6 +148,12 @@ public class ParameterizedTreePath extends AbstractTreePath {
     }
 
     @Override
+    public ITreePath filterOptional(PathFilterFunction filterFunction, int[] refPathIndices) {
+        return new ParameterizedTreePath(baseTreePath.filterOptional(filterFunction, refPathIndices), requestId, parameter);
+    }
+
+
+    @Override
     public ITreePath mapTree(PathMapFunction<Path> mapFunction) {
         return new ParameterizedTreePath(baseTreePath.mapTree(mapFunction), requestId, parameter);
     }

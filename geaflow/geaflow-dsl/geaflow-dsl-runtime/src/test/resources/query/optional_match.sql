@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS tbl_result (
 
 CREATE GRAPH dy_modern(
     Vertex person using v_person WITH ID(personId),
-    Vertex person2 using v_person WITH ID(personId),
+    -- Vertex person2 using v_person2 WITH ID(personId2),
 	Edge knows using e_knows WITH ID(knowsSrc, knowsTarget)
 ) WITH (
 	storeType='memory',
@@ -110,9 +110,19 @@ SELECT
     p_name,
     c_name
 FROM (
-    optional MATCH (p:person)-[r:knows]->(c:person2)
+    OPTIONAL MATCH (p:person)-[r:knows]->(c:person)
     RETURN p.name as p_name, c.name as c_name
 );
+
+
+-- INSERT INTO tbl_result
+-- SELECT
+--     p_name,
+--     c_name
+-- FROM (
+--     MATCH (p:person)-[r:knows]->(c:person2)
+--     RETURN p.name as p_name, c.name as c_name
+-- );
 
 
 

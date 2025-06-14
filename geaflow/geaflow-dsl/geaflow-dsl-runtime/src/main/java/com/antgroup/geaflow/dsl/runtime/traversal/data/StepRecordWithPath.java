@@ -37,6 +37,13 @@ public interface StepRecordWithPath extends StepRecord {
 
     StepRecordWithPath filter(PathFilterFunction function, int[] refPathIndices);
 
+    /**
+     * Filter with optional semantics. Similar to StepJoinOperator LEFT JOIN logic:
+     * - If filter passes: return filtered record
+     * - If filter fails: return original record (preserve for optional match)
+     */
+    StepRecordWithPath filterOptional(PathFilterFunction function, int[] refPathIndices);
+
     StepRecordWithPath mapPath(PathMapFunction<Path> function, int[] refPathIndices);
 
     StepRecordWithPath mapTreePath(Function<ITreePath, ITreePath> function);

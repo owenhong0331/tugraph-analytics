@@ -40,6 +40,7 @@ import com.antgroup.geaflow.dsl.rel.match.IMatchNode;
 import com.antgroup.geaflow.dsl.rel.match.LoopUntilMatch;
 import com.antgroup.geaflow.dsl.rel.match.MatchDistinct;
 import com.antgroup.geaflow.dsl.rel.match.MatchFilter;
+import com.antgroup.geaflow.dsl.rel.match.OptionalMatchFilter;
 import com.antgroup.geaflow.dsl.rel.match.MatchJoin;
 import com.antgroup.geaflow.dsl.rel.match.MatchPathModify;
 import com.antgroup.geaflow.dsl.rel.match.MatchPathSort;
@@ -154,6 +155,9 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
+
+
+import java.lang.reflect.Field;
 
 public class GQLToRelConverter extends SqlToRelConverter {
 
@@ -443,8 +447,14 @@ public class GQLToRelConverter extends SqlToRelConverter {
             replaceSubQueries(whereBb, where, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
             RexNode condition = whereBb.convertExpression(where);
 
-            IMatchNode newPathPattern = MatchFilter.create(graphMatch.getPathPattern(),
-                condition, graphMatch.getPathPattern().getPathSchema());
+            IMatchNode newPathPattern;
+            if (matchPattern.getIsOptional()) {
+                newPathPattern = OptionalMatchFilter.create(graphMatch.getPathPattern(),
+                    condition, graphMatch.getPathPattern().getPathSchema());
+            } else {
+                newPathPattern = MatchFilter.create(graphMatch.getPathPattern(),
+                    condition, graphMatch.getPathPattern().getPathSchema());
+            }
             graphMatch = graphMatch.copy(graphMatch.getTraitSet(), graphMatch.getInput(),
                 newPathPattern, newPathPattern.getRowType(), graphMatch.getIsOptional());
         }
@@ -523,7 +533,7 @@ public class GQLToRelConverter extends SqlToRelConverter {
     }
 
     private SingleMatchNode convertMatchNodeWhere(SqlMatchNode matchNode, SqlNode matchWhere,
-                                                  IMatchNode input, Blackboard withBb) {
+                                                  IMatchNode input, Blackboard withBb,boolean isOptional) {
         assert input != null;
         SqlValidatorScope whereScope = getValidator().getScopes(matchWhere);
         Blackboard nodeBb = createBlackboard(whereScope, null, false).setWithBb(withBb);
@@ -533,11 +543,17 @@ public class GQLToRelConverter extends SqlToRelConverter {
         }
         replaceSubQueries(nodeBb, matchWhere, RelOptUtil.Logic.UNKNOWN_AS_FALSE);
         RexNode condition = nodeBb.convertExpression(matchWhere);
-
+        
         PathRecordType pathRecordType = input.getPathSchema();
         RelDataTypeField pathField = pathRecordType.getField(matchNode.getName(), isCaseSensitive(), false);
         condition = GQLRexUtil.toPathInputRefForWhere(pathField, condition);
-        return MatchFilter.create(input, condition, input.getPathSchema());
+        SingleMatchNode result;
+        if (isOptional) {
+            result = OptionalMatchFilter.create(input, condition, input.getPathSchema());
+        } else {
+            result = MatchFilter.create(input, condition, input.getPathSchema());
+        }
+        return result;
     }
 
     private static class WhereMatchNode extends AbstractRelNode {
@@ -580,18 +596,22 @@ public class GQLToRelConverter extends SqlToRelConverter {
                     }
                     if (matchNode.getWhere() != null) {
                         vertexMatch = convertMatchNodeWhere(matchNode, matchNode.getWhere(),
-                            vertexMatch, withBb);
+                            vertexMatch, withBb,isOptional);
                     }
                     // generate for regex match
                     if (preMatchNode instanceof SqlMatchEdge && ((SqlMatchEdge) preMatchNode).isRegexMatch()) {
                         SqlMatchEdge inputEdgeNode = (SqlMatchEdge) preMatchNode;
                         EdgeMatch inputEdgeMatch = (EdgeMatch) vertexMatch.find(node -> node instanceof EdgeMatch);
+                        System.out.println("testing1 " + vertexMatch);
                         relPathPattern = convertRegexMatch(inputEdgeNode, inputEdgeMatch, vertexMatch);
                     } else {
+                        System.out.println("testing2 " + vertexMatch);
+                        System.out.println("testing4 " + relPathPattern);
                         relPathPattern = vertexMatch;
                     }
                     if (getValidator().getStartCycleMatchNode((SqlMatchNode) pathNode) != null) {
                         relPathPattern = translateCycleMatchNode(relPathPattern, pathNode);
+                        System.out.println("testing3 " + vertexMatch);
                     }
                     break;
                 case GQL_MATCH_EDGE:
@@ -613,7 +633,7 @@ public class GQLToRelConverter extends SqlToRelConverter {
 
                     if (matchEdge.getWhere() != null) {
                         relPathPattern = convertMatchNodeWhere(matchEdge, matchEdge.getWhere(),
-                            edgeMatch, withBb);
+                            edgeMatch, withBb,isOptional);
                     } else {
                         relPathPattern = edgeMatch;
                     }

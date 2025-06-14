@@ -49,11 +49,12 @@ public class GQLToRelConverterTest {
 
     @Test
     public void testMatchPattern() {
+        System.out.print("Hello1231213213324, ");
         PlanTester.build()
-            .gql("match(a:user)-[e:knows]->(b:user)")
+            .gql("match(a:user)-[e:knows where e.weight > 0.4 ]->(b:user {id : 1} )")
             .toRel()
             .checkRelNode(
-                "LogicalGraphMatch(path=[(a:user)-[e:knows]->(b:user)])\n"
+                "LogicalGraphMatch(path=[(a:user)-[e:knows ]->(b:user ) ])\n"
                     + "  LogicalGraphScan(table=[default.g0])\n"
             );
     }
@@ -62,7 +63,7 @@ public class GQLToRelConverterTest {
     public void testOptionalMatchPattern() {
         System.out.print("Hello123134, ");
         PlanTester.build()
-            .gql("optional match(a:user)-[e:knows]->(b:user)")
+            .gql("optional match(a:user)-[e:knows where e.weight > 0.4]->(b:user {id : 1})")
             .toRel()
             .checkRelNode(
                 "LogicalGraphMatch(path=[(OPTIONAL a:user)-[OPTIONAL e:knows]->(OPTIONAL b:user)])\n"
@@ -120,6 +121,7 @@ public class GQLToRelConverterTest {
             + " weight double"
             + ")"
             + ")";
+        System.out.print("Helloqweqe123134, ");
         PlanTester.build()
             .registerGraph(graph)
             .gql("MATCH (a:user|person WHERE id = 1)-[e:knows|follow]->(b:user)\n"

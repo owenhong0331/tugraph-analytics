@@ -66,6 +66,8 @@ public interface ITreePath extends IPathMessage {
 
     ITreePath filter(PathFilterFunction filterFunction, int[] refPathIndices);
 
+    ITreePath filterOptional(PathFilterFunction filterFunction, int[] refPathIndices);
+
     ITreePath mapTree(PathMapFunction<Path> mapFunction);
 
     <O> List<O> map(PathMapFunction<O> mapFunction);

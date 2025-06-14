@@ -159,6 +159,13 @@ public abstract class AbstractTreePath implements ITreePath {
         return filter(filterFunction, refPathIndices, mapping, new DefaultPath(), depth, new PathIdCounter());
     }
 
+    @Override
+    public ITreePath filterOptional(PathFilterFunction filterFunction, int[] refPathIndices) {
+        int depth = getDepth();
+        int[] mapping = createMappingIndices(refPathIndices, depth);
+        return filterOptional(filterFunction, refPathIndices, mapping, new DefaultPath(), depth, new PathIdCounter());
+    }
+
     /**
      * Filter on the tree path.This is a fast implementation which filter the tree without
      * expand this tree and rebuild the filter paths to a tree.
@@ -253,6 +260,138 @@ public abstract class AbstractTreePath implements ITreePath {
         // to the child node.
         return EmptyTreePath.of();
     }
+
+    /**
+     * Filter with optional semantics - replace filtered elements with null instead of removing them.
+     * This maintains the original path structure and length for Optional Match.
+     */
+    protected ITreePath filterOptional(PathFilterFunction filterFunction, int[] refPathIndices,
+                                       int[] fieldMapping, Path currentPath, int maxDepth, PathIdCounter pathId) {
+        if (refPathIndices.length == 0) {
+            // filter function has not referred any fields in the path.
+            if (filterFunction.accept(null)) {
+                return this;
+            }
+            // For Optional Match: return null path instead of empty tree to preserve structure
+            return createNullPath();
+        }
+        int pathIndex = maxDepth - currentPath.size() - 1;
+        int parentSize = getParents().size();
+        switch (getNodeType()) {
+            case VERTEX_TREE:
+                currentPath.addNode(getVertex());
+                break;
+            case EDGE_TREE:
+                // If this edge set is referred by the filter function, do filter
+                // for each edge in the set.
+                if (Arrays.binarySearch(refPathIndices, pathIndex) >= 0) {
+                    EdgeSet edges = getEdgeSet();
+                    List<ITreePath> filterTrees = new ArrayList<>();
+                    for (RowEdge edge : edges) {
+                        currentPath.addNode(edge);
+                        // if the parent is empty or reach the last referred path node in the filter function.
+                        if (parentSize == 0 || pathIndex == refPathIndices[0]) {
+                            // Align the field indices of the current path with the referred index in the function.
+                            FieldAlignPath alignPath = new FieldAlignPath(currentPath, fieldMapping);
+                            alignPath.setId(pathId.getAndInc());
+                            if (filterFunction.accept(alignPath)) {
+                                EdgeTreePath edgeTreePath = EdgeTreePath.of(null, edge);
+                                if (parentSize > 0) {
+                                    edgeTreePath.addParent(getParents().get(0));
+                                }
+                                filterTrees.add(edgeTreePath);
+                            } else {
+                                // For Optional Match: add null edge when filter fails to preserve structure
+                                EdgeTreePath nullEdgeTreePath = EdgeTreePath.of(null, (RowEdge) null);
+                                if (parentSize > 0) {
+                                    nullEdgeTreePath.addParent(getParents().get(0));
+                                }
+                                filterTrees.add(nullEdgeTreePath);
+                            }
+                        } else if (parentSize >= 1) {
+                            for (ITreePath parent : getParents()) {
+                                // Use filterOptional for recursive calls to maintain Optional Match semantics
+                                ITreePath filterTree = ((AbstractTreePath) parent).filterOptional(filterFunction,
+                                    refPathIndices, fieldMapping, currentPath, maxDepth, pathId);
+                                if (!filterTree.isEmpty()) {
+                                    filterTrees.add(filterTree.extendTo(edge));
+                                } else {
+                                    // For Optional Match: even if parent filter fails, add null edge to preserve structure
+                                    filterTrees.add(parent.extendTo((RowEdge) null));
+                                }
+                            }
+                        }
+                        currentPath.remove(currentPath.size() - 1);
+                    }
+                    return UnionTreePath.create(filterTrees);
+                } else { // edge is not referred in the filter function, so add null to the current path.
+                    currentPath.addNode(null);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Illegal tree node: " + getNodeType());
+        }
+        // reach the last referred path node. (refPathIndices is sorted, so refPathIndices[0] is the
+        // last referred path field).
+        if (pathIndex == refPathIndices[0]) {
+            // Align the field indices of the current path with the referred index in the function.
+            FieldAlignPath alignPath = new FieldAlignPath(currentPath, fieldMapping);
+            alignPath.setId(pathId.getAndInc());
+            boolean accept = filterFunction.accept(alignPath);
+            // remove current node before return.
+            currentPath.remove(currentPath.size() - 1);
+            if (accept) {
+                return this;
+            }
+            // For Optional Match: return null path instead of empty tree to preserve structure
+            return createNullPath();
+        }
+        // filter parent tree with optional semantics
+        List<ITreePath> filterParents = new ArrayList<>(parentSize);
+        for (ITreePath parent : getParents()) {
+            // Use filterOptional for recursive calls to maintain Optional Match semantics
+            ITreePath filterTree = ((AbstractTreePath) parent).filterOptional(filterFunction, refPathIndices,
+                fieldMapping, currentPath, maxDepth, pathId);
+            // For Optional Match: always include parents, even if they contain null values
+            filterParents.add(filterTree);
+        }
+        // remove current node before return.
+        currentPath.remove(currentPath.size() - 1);
+        if (filterParents.size() > 0) {
+            return copy(filterParents);
+        }
+        // For Optional Match: instead of returning empty tree, create a null path to preserve structure
+        return createNullPath();
+    }
+
+
+
+    /**
+     * Create a path with null elements to represent optional filter failure.
+     * This preserves the path structure but marks filtered elements as null.
+     */
+    private ITreePath createNullPath() {
+        switch (getNodeType()) {
+            case VERTEX_TREE:
+                // Create a vertex tree path with null vertex but preserve parent structure
+                ITreePath nullVertexPath = VertexTreePath.of(getRequestIds(), null);
+                for (ITreePath parent : getParents()) {
+                    nullVertexPath.addParent(parent);
+                }
+                return nullVertexPath;
+            case EDGE_TREE:
+                // Create an edge tree path with null edge but preserve parent structure
+                ITreePath nullEdgePath = EdgeTreePath.of(getRequestIds(), (RowEdge) null);
+                for (ITreePath parent : getParents()) {
+                    nullEdgePath.addParent(parent);
+                }
+                return nullEdgePath;
+            default:
+                return EmptyTreePath.of();
+        }
+    }
+
+
 
     /**
      * Create field mapping for the referred path indices.

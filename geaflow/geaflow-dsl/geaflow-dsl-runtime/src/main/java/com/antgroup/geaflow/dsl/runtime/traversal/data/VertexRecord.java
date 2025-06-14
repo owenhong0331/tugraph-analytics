@@ -25,6 +25,8 @@ import com.antgroup.geaflow.dsl.runtime.traversal.path.EmptyTreePath;
 import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath;
 import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath.PathFilterFunction;
 import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath.PathMapFunction;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.VertexTreePath;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.TreePaths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -79,6 +81,15 @@ public class VertexRecord implements StepRecordWithPath {
     @Override
     public StepRecordWithPath filter(PathFilterFunction function, int[] refPathIndices) {
         ITreePath filterTreePath = treePath.filter(function, refPathIndices);
+        return new VertexRecord(vertex, filterTreePath);
+    }
+
+    @Override
+    public StepRecordWithPath filterOptional(PathFilterFunction function, int[] refPathIndices) {
+        // Use filterOptional method to preserve path structure for OPTIONAL MATCH
+        // This replaces filtered elements with null instead of removing them,
+        // maintaining the original path structure and length for Optional Match
+        ITreePath filterTreePath = treePath.filterOptional(function, refPathIndices);
         return new VertexRecord(vertex, filterTreePath);
     }
 
