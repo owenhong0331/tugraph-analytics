@@ -41,6 +41,8 @@ public class EdgeGroupRecord implements StepRecordWithPath {
 
     private final EdgeGroup edgeGroup;
 
+    private boolean isOptionalMatch;
+
     private final Map<Object, ITreePath> targetId2TreePaths;
 
     private EdgeGroupRecord(EdgeGroup edgeGroup, Map<Object, ITreePath> targetId2TreePaths) {
@@ -175,5 +177,14 @@ public class EdgeGroupRecord implements StepRecordWithPath {
     @Override
     public StepRecordType getType() {
         return StepRecordType.EDGE_GROUP;
+    }
+
+    public boolean getIsOptionalMatch() {
+        return isOptionalMatch;
+    }
+
+    public boolean setIsOptionalMatch(boolean isOptionalMatch) {
+        this.isOptionalMatch = isOptionalMatch;
+        return isOptionalMatch;
     }
 }

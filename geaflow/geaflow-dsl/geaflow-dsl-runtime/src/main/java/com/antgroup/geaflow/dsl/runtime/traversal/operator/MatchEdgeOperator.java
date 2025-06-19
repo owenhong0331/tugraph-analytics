@@ -94,12 +94,15 @@ public class MatchEdgeOperator extends AbstractStepOperator<MatchEdgeFunction, V
                     numEdge++;
                 }
                 if (numEdge == 0 && isOptionMatch) {
+                    System.out.println("DEBUG: MatchEdgeOperator creating null path (no extend) for vertex: " + vertex.getVertex().getId());
                     targetTreePaths.put(null, vertex.getTreePath());
                 }
                 loadEdgeHg.update(numEdge);
             }
         }
         EdgeGroupRecord edgeGroupRecord = EdgeGroupRecord.of(edgeGroup, targetTreePaths);
+        edgeGroupRecord.setIsOptionalMatch(isOptionMatch);
+        // System.out.print("collec23424t "+isOptionMatch);
         collect(edgeGroupRecord);
     }
 

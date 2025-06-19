@@ -42,4 +42,9 @@ public class StepWaitCallQueryCollector<OUT extends StepRecord> implements StepC
             baseCollector.collect(record);
         }
     }
+
+    @Override
+    public void collect(OUT record,boolean isOptionMatch) {
+        collect(record);
+    }
 }

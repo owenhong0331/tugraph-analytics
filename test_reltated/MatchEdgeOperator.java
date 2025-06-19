@@ -100,7 +100,7 @@ public class MatchEdgeOperator extends AbstractStepOperator<MatchEdgeFunction, V
             }
         }
         EdgeGroupRecord edgeGroupRecord = EdgeGroupRecord.of(edgeGroup, targetTreePaths);
-        collect(edgeGroupRecord);
+        collect(edgeGroupRecord,isOptionMatch);
     }
 
     @Override

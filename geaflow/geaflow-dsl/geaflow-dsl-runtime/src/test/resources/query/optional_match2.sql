@@ -107,8 +107,20 @@ SELECT
     c.name
 	
 FROM (
-    OPTIONAL MATCH (p:person)-[r:knows]->(c:person)
+	MATCH (p:person)
+    OPTIONAL MATCH (p)-[r:knows]->(c:person)
 );
+
+-- INSERT INTO tbl_result
+-- SELECT
+--     p.name,
+-- 	-- r.weight,
+--     c.name
+	
+-- FROM (
+-- 	MATCH (p:person)
+--     OPTIONAL MATCH (p)-[r:knows]->(c:person)
+-- );
 
 -- INSERT INTO tbl_result
 -- SELECT

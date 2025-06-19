@@ -46,6 +46,11 @@ public class StepJumpCollector implements StepCollector<StepRecord> {
     }
 
     @Override
+    public void collect(StepRecord record,boolean isOptionMatch) {
+        collect(record);
+    }
+
+    @Override
     public String toString() {
         return "StepJumpCollector{"
             + "jumpOpId=" + jumpOpId

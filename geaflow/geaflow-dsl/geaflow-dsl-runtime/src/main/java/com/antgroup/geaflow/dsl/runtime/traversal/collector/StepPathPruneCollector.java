@@ -48,4 +48,9 @@ public class StepPathPruneCollector<OUT extends StepRecord> implements StepColle
             baseCollector.collect(record);
         }
     }
+
+    @Override
+    public void collect(OUT record,boolean isOptionMatch) {
+        collect(record);
+    }
 }

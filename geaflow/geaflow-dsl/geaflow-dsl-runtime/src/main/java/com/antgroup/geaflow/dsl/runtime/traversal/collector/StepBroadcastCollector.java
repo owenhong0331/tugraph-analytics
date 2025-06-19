@@ -37,4 +37,8 @@ public class StepBroadcastCollector<OUT extends StepRecord> implements StepColle
             collector.collect(record);
         }
     }
+    @Override
+    public void collect(OUT record,boolean isOptionMatch) {
+        collect(record);
+    }
 }

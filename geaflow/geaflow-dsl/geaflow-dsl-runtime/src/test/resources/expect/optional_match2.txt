@@ -1,5 +1,5 @@
-marko, vadas
-marko, josh
-vadas, null
-josh, null
-peter, null
+peter,null
+josh,null
+vadas,null
+marko,vadas
+marko,josh
