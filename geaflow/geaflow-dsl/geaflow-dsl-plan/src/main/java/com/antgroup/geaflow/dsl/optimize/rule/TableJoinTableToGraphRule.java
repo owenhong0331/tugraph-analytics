@@ -380,7 +380,7 @@ public class TableJoinTableToGraphRule extends AbstractJoinToGraphRule {
         GeaFlowGraph graph = typeFactory.getCurrentGraph();
         LogicalGraphScan graphScan = LogicalGraphScan.create(cluster, graph);
         LogicalGraphMatch graphMatch = LogicalGraphMatch.create(cluster, graphScan,
-            matchNode, matchNode.getPathSchema());
+            matchNode, matchNode.getPathSchema(),false);
 
         List<RelDataTypeField> matchTypeFields = new ArrayList<>();
         List<String> newFieldNames = this.generateFieldNames("f", projects.size(), new HashSet<>());

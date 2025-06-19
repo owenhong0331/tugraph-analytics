@@ -53,4 +53,8 @@ public class StepEndCollector implements StepCollector<StepRecord> {
             }
         }
     }
+    @Override
+    public void collect(StepRecord record,boolean isOptionMatch) {
+        collect(record);
+    }
 }

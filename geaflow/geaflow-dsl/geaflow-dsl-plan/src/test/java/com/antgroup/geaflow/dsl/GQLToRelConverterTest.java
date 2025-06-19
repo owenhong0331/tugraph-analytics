@@ -49,11 +49,24 @@ public class GQLToRelConverterTest {
 
     @Test
     public void testMatchPattern() {
+        System.out.print("Hello1231213213324, ");
         PlanTester.build()
-            .gql("match(a:user)-[e:knows]->(b:user)")
+            .gql("match(a:user)-[e:knows where e.weight > 0.4 ]->(b:user {id : 1} )")
             .toRel()
             .checkRelNode(
-                "LogicalGraphMatch(path=[(a:user)-[e:knows]->(b:user)])\n"
+                "LogicalGraphMatch(path=[(a:user)-[e:knows ]->(b:user ) ])\n"
+                    + "  LogicalGraphScan(table=[default.g0])\n"
+            );
+    }
+
+    @Test
+    public void testOptionalMatchPattern() {
+        System.out.print("Hello123134, ");
+        PlanTester.build()
+            .gql("optional match(a:user)-[e:knows where e.weight > 0.4]->(b:user {id : 1})")
+            .toRel()
+            .checkRelNode(
+                "LogicalGraphMatch(path=[(OPTIONAL a:user)-[OPTIONAL e:knows]->(OPTIONAL b:user)])\n"
                     + "  LogicalGraphScan(table=[default.g0])\n"
             );
     }
@@ -108,6 +121,7 @@ public class GQLToRelConverterTest {
             + " weight double"
             + ")"
             + ")";
+        System.out.print("Helloqweqe123134, ");
         PlanTester.build()
             .registerGraph(graph)
             .gql("MATCH (a:user|person WHERE id = 1)-[e:knows|follow]->(b:user)\n"
@@ -897,6 +911,48 @@ public class GQLToRelConverterTest {
             .checkRelNode("LogicalProject(d=[$5], c=[$3], a=[$0], b=[$2])\n"
                 + "  LogicalGraphMatch(path=[{(a:)-[e_col_1:]-(b:) where =(b.name, _UTF-16LE'marko') } Join {(c:)"
                 + "-[e_col_3:]-(d:) where =(d.id, 1) }])\n"
+                + "    LogicalGraphScan(table=[default.g0])\n");
+    }
+
+    @Test
+    public void testGQLOPTIONALComplexMatchWithPathNotConcat() {
+        // System.out.print("Hello123134, ");
+        String script1 = "OPTIONAL Match(a)-(b), (b) - (c), (b) - (d) - (f)"
+            + "RETURN b, c, a, d, f";
+
+        PlanTester
+            .build()
+            .gql(script1)
+            .toRel()
+            .checkRelNode(
+                "LogicalProject(b=[$2], c=[$4], a=[$0], d=[$7], f=[$9])\n"
+                + "  LogicalGraphMatch(path=[{(OPTIONAL a:)-[OPTIONAL e_col_1:]-(OPTIONAL b:)-[OPTIONAL e_col_3:]-(OPTIONAL c:)} LEFT Join {(OPTIONAL b:)-[OPTIONAL e_col_5:]-(OPTIONAL d:)"
+                + "-[OPTIONAL e_col_6:]-(OPTIONAL f:)}])\n"
+                + "    LogicalGraphScan(table=[default.g0])\n");
+
+        String script2 = "OPTIONAL Match(a:user where a.id = 0)-[e]-(b),(a where a.id = 2)-(c), (d) - (a)\n"
+            + "RETURN a, b, c, d";
+
+        PlanTester
+            .build()
+            .gql(script2)
+            .toRel()
+            .checkRelNode(
+                "LogicalProject(a=[$2], b=[$4], c=[$7], d=[$0])\n"
+                + "  LogicalGraphMatch(path=[{(OPTIONAL d:)-[OPTIONAL e_col_4:]-(OPTIONAL a:) where =(a.~label, _UTF-16LE'user')  where =(a.id, 0) "
+                + "-[OPTIONAL e:]-(OPTIONAL b:)} LEFT Join {(OPTIONAL a:) where =(a.id, 2) -[OPTIONAL e_col_2:]-(OPTIONAL c:)}])\n"
+                + "    LogicalGraphScan(table=[default.g0])\n");
+
+        String script3 = "OPTIONAL Match(a)-(b where b.name = 'marko'), (c) - (d where d.id = 1)\n"
+            + "Return d, c, a, b";
+
+        PlanTester
+            .build()
+            .gql(script3)
+            .toRel()
+            .checkRelNode("LogicalProject(d=[$5], c=[$3], a=[$0], b=[$2])\n"
+                + "  LogicalGraphMatch(path=[{(OPTIONAL a:)-[OPTIONAL e_col_1:]-(OPTIONAL b:) where =(b.name, _UTF-16LE'marko') } LEFT Join {(OPTIONAL c:)"
+                + "-[OPTIONAL e_col_3:]-(OPTIONAL d:) where =(d.id, 1) }])\n"
                 + "    LogicalGraphScan(table=[default.g0])\n");
     }
 

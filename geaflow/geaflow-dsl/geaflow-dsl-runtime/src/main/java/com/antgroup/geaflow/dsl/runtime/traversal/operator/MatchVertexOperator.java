@@ -110,28 +110,51 @@ public class MatchVertexOperator extends AbstractStepOperator<MatchVertexFunctio
         if (vertex == null) {
             vertex = VertexEdgeFactory.createVertex((VertexType) getOutputType());
         }
-        collect(VertexRecord.of(vertex, currentPath));
+        System.out.print("coll23424ec23424t");
+        collect(VertexRecord.of(vertex, currentPath),isOptionMatch);
     }
 
     private void processEdgeGroup(EdgeGroupRecord edgeGroupRecord) {
         EdgeGroup edgeGroup = edgeGroupRecord.getEdgeGroup();
-        for (RowEdge edge : edgeGroup) {
-            Object targetId = edge.getTargetId();
-            // load targetId.
-            RowVertex vertex = context.loadVertex(targetId, function.getVertexFilter(), graphSchema, addingVertexFieldTypes);
-            if (vertex != null) {
+
+        // For OPTIONAL MATCH: process all vertex IDs (including null for no-edge cases)
+        // For regular MATCH: only process edges that exist
+        if (isOptionMatch) {
+            // Process all target vertex IDs from the EdgeGroupRecord
+            for (Object targetId : edgeGroupRecord.getVertexIds()) {
                 ITreePath treePath = edgeGroupRecord.getPathById(targetId);
-                // set current vertex.
-                context.setVertex(vertex);
-                // process new vertex.
-                processVertex(VertexRecord.of(vertex, treePath));
-            } else if (isOptionMatch) {
-                vertex = VertexEdgeFactory.createVertex((VertexType) getOutputType());
-                ITreePath treePath = edgeGroupRecord.getPathById(targetId);
-                // set current vertex.
-                context.setVertex(vertex);
-                // process new vertex.
-                processVertex(VertexRecord.of(null, treePath));
+                if (targetId == null) {
+                    // This is the case where no edges were found - create null vertex
+                    RowVertex vertex = VertexEdgeFactory.createVertex((VertexType) getOutputType());
+                    context.setVertex(vertex);
+                    processVertex(VertexRecord.of(null, treePath));
+                } else {
+                    // Load the actual target vertex
+                    RowVertex vertex = context.loadVertex(targetId, function.getVertexFilter(), graphSchema, addingVertexFieldTypes);
+                    if (vertex != null) {
+                        context.setVertex(vertex);
+                        processVertex(VertexRecord.of(vertex, treePath));
+                    } else {
+                        // Target vertex doesn't exist - create null vertex for optional match
+                        vertex = VertexEdgeFactory.createVertex((VertexType) getOutputType());
+                        context.setVertex(vertex);
+                        processVertex(VertexRecord.of(null, treePath));
+                    }
+                }
+            }
+        } else {
+            // Regular MATCH: only process existing edges
+            for (RowEdge edge : edgeGroup) {
+                Object targetId = edge.getTargetId();
+                // load targetId.
+                RowVertex vertex = context.loadVertex(targetId, function.getVertexFilter(), graphSchema, addingVertexFieldTypes);
+                if (vertex != null) {
+                    ITreePath treePath = edgeGroupRecord.getPathById(targetId);
+                    // set current vertex.
+                    context.setVertex(vertex);
+                    // process new vertex.
+                    processVertex(VertexRecord.of(vertex, treePath));
+                }
             }
         }
     }

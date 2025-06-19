@@ -79,4 +79,9 @@ public class StepReturnCollector implements StepCollector<StepRecord> {
         returnMessage.putValue(new ReturnKey(pathId, queryId), value);
         context.sendMessage(startVertexId, returnMessage, callerOpId);
     }
+
+    @Override
+    public void collect(StepRecord record,boolean isOptionMatch) {
+        collect(record);
+    }
 }

@@ -255,5 +255,104 @@ public class GQLValidateMatchStatementTest {
                 + "(BIGINT src_id, BIGINT target_id, VARCHAR ~label, BIGINT time, DOUBLE weight) e,"
                 + " Vertex:RecordType:peek(BIGINT id, VARCHAR ~label, VARCHAR name) b)");
     }
+    @Test
+    public void testValidateOptionalMatch1() {
+        // System.out.print("Hello, ");
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user where id = 1)-[e:knows where e.weight > 0.4]->(b:user) RETURN a")
+            .validate()
+            .expectValidateType( "RecordType(Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) a)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch2() {
+        // System.out.print("Hello123134, ");
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a WHERE name = 'marko')<-[e]-(b) WHERE a.name <> b.name RETURN e")
+            .validate()
+            .expectValidateType("RecordType(Edge: RecordType:peek"
+                + "(BIGINT src_id, BIGINT target_id, VARCHAR ~label, DOUBLE weight) e)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch3() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user WHERE name = 'where')-[e]-(b) RETURN b")
+            .validate()
+            .expectValidateType("RecordType(Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) b)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch4() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a WHERE name = 'match')-[e]->(b) RETURN a.name")
+            .validate()
+            .expectValidateType("RecordType(VARCHAR name)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch5() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a WHERE name = 'knows')<-[e]->(b) RETURN e.weight")
+            .validate()
+            .expectValidateType("RecordType(DOUBLE weight)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch6() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user where id = 1) RETURN a")
+            .validate()
+            .expectValidateType("RecordType(Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) a)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch7() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user where id = 1)-[e:knows]->(b:user) RETURN a, e, b")
+            .validate()
+            .expectValidateType("RecordType(Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) a, "
+                + "Edge: RecordType:peek"
+                + "(BIGINT src_id, BIGINT target_id, VARCHAR ~label, DOUBLE weight) e, "
+                + "Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) b)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch8() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user where id = 1)-[e:knows]->(b:user) RETURN b")
+            .validate()
+            .expectValidateType("RecordType(Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) b)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch9() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user where id = 1)-[e:knows]->(b:user) RETURN e")
+            .validate()
+            .expectValidateType("RecordType(Edge: RecordType:peek"
+                + "(BIGINT src_id, BIGINT target_id, VARCHAR ~label, DOUBLE weight) e)");
+    }
+
+    @Test
+    public void testValidateOptionalMatch10() {
+        PlanTester.build()
+            .gql("OPTIONAL MATCH (a:user where id = 1)-[e:knows]->(b:user) RETURN a, e, b ORDER BY a.id")
+            .validate()
+            .expectValidateType("RecordType(Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) a, "
+                + "Edge: RecordType:peek"
+                + "(BIGINT src_id, BIGINT target_id, VARCHAR ~label, DOUBLE weight) e, "
+                + "Vertex:RecordType:peek"
+                + "(BIGINT id, VARCHAR ~label, VARCHAR name, INTEGER age) b)");
+    }
+
+    
 
 }

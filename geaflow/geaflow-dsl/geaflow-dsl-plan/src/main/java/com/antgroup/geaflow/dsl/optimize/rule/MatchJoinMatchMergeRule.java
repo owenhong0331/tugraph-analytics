@@ -102,7 +102,9 @@ public class MatchJoinMatchMergeRule extends AbstractJoinToGraphRule {
         LogicalJoin join = call.rel(0);
         MatchJoin newPathPattern = MatchJoin.create(join.getCluster(), join.getTraitSet(),
             leftPathPattern, rightPathPattern, join.getCondition(), join.getJoinType());
-        GraphMatch newGraphMatch = ((GraphMatch)leftGraphMatch).copy(newPathPattern);
+        GraphMatch leftMatch = (GraphMatch)leftGraphMatch;
+        GraphMatch newGraphMatch = leftMatch.copy(leftMatch.getTraitSet(), leftMatch.getInput(),
+            newPathPattern, newPathPattern.getRowType(), leftMatch.getIsOptional());
 
         List<RexNode> newProjects = new ArrayList<>();
         if (rexLeftNodeMap.size() > 0) {
@@ -139,8 +141,10 @@ public class MatchJoinMatchMergeRule extends AbstractJoinToGraphRule {
                 joinConditions.add(condition);
             }
             RexNode newCondition = RexUtil.composeConjunction(rexBuilder, joinConditions);
-            newGraphMatch = newGraphMatch.copy(matchJoin.copy(matchJoin.getTraitSet(),
-                newCondition, matchJoin.getLeft(), matchJoin.getRight(), matchJoin.getJoinType()));
+            MatchJoin updatedMatchJoin = matchJoin.copy(matchJoin.getTraitSet(),
+                newCondition, matchJoin.getLeft(), matchJoin.getRight(), matchJoin.getJoinType());
+            newGraphMatch = newGraphMatch.copy(newGraphMatch.getTraitSet(), newGraphMatch.getInput(),
+                updatedMatchJoin, updatedMatchJoin.getRowType(), newGraphMatch.getIsOptional());
         }
 
         List<String> fieldNames = this.generateFieldNames("f", newProjects.size(), new HashSet<>());

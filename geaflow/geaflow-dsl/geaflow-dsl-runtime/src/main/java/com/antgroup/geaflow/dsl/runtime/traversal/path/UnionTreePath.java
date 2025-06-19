@@ -283,6 +283,22 @@ public class UnionTreePath extends AbstractTreePath {
     }
 
     @Override
+    protected ITreePath filterOptional(PathFilterFunction filterFunction,
+                               int[] refPathIndices, int[] fieldMapping,
+                               Path currentPath, int maxDepth, PathIdCounter pathId) {
+        List<ITreePath> filterNodes = new ArrayList<>();
+        for (ITreePath node : nodes) {
+            ITreePath filterNode = ((AbstractTreePath) node).filterOptional(filterFunction,
+                refPathIndices, fieldMapping, currentPath, maxDepth, pathId);
+            // if (filterNode != null) {
+            //     filterNodes.add(filterNode);
+            // }
+            filterNodes.add(filterNode);
+        }
+        return UnionTreePath.create(filterNodes);
+    }
+
+    @Override
     public boolean equalNode(ITreePath other) {
         if (other.getNodeType() == NodeType.UNION_TREE) {
             UnionTreePath unionTreePath = (UnionTreePath) other;

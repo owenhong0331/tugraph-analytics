@@ -214,7 +214,7 @@ public class PathReferenceAnalyzer {
             GraphMatch match = (GraphMatch) node;
             IMatchNode rewritePathPattern = (IMatchNode) pruneAndAdjustPathInputRef(match.getPathPattern());
             rewriteNode = match.copy(match.getTraitSet(), rewriteInputs.get(0), rewritePathPattern,
-                rewritePathPattern.getPathSchema());
+                rewritePathPattern.getPathSchema(),match.getIsOptional());
         }
         return rewriteNode;
     }

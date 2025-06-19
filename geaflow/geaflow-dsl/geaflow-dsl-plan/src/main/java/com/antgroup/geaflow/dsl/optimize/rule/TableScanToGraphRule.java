@@ -163,7 +163,7 @@ public class TableScanToGraphRule extends AbstractJoinToGraphRule {
             return;
         }
         LogicalGraphMatch graphMatch = LogicalGraphMatch.create(cluster, graphScan,
-            afterLeft, afterLeft.getPathSchema());
+            afterLeft, afterLeft.getPathSchema(),false);
 
         List<RelDataTypeField> matchTypeFields = new ArrayList<>();
         List<String> newFieldNames = this.generateFieldNames("f", projects.size(), new HashSet<>());

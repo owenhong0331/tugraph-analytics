@@ -21,6 +21,7 @@ package com.antgroup.geaflow.dsl.rel;
 
 import com.antgroup.geaflow.dsl.common.exception.GeaFlowDSLException;
 import com.antgroup.geaflow.dsl.rel.match.EdgeMatch;
+import com.antgroup.geaflow.dsl.rel.match.OptionalEdgeMatch;
 import com.antgroup.geaflow.dsl.rel.match.IMatchNode;
 import com.antgroup.geaflow.dsl.rel.match.LoopUntilMatch;
 import com.antgroup.geaflow.dsl.rel.match.MatchAggregate;
@@ -34,6 +35,7 @@ import com.antgroup.geaflow.dsl.rel.match.MatchUnion;
 import com.antgroup.geaflow.dsl.rel.match.SingleMatchNode;
 import com.antgroup.geaflow.dsl.rel.match.SubQueryStart;
 import com.antgroup.geaflow.dsl.rel.match.VertexMatch;
+import com.antgroup.geaflow.dsl.rel.match.OptionalVertexMatch;
 import com.antgroup.geaflow.dsl.rel.match.VirtualEdgeMatch;
 import com.antgroup.geaflow.dsl.util.GQLRelUtil;
 import java.util.List;
@@ -54,13 +56,16 @@ import org.apache.commons.lang3.StringUtils;
 
 public abstract class GraphMatch extends SingleRel {
 
+    protected boolean isOptional;
+
     protected final IMatchNode pathPattern;
 
     protected GraphMatch(RelOptCluster cluster, RelTraitSet traits,
-                         RelNode input, IMatchNode pathPattern, RelDataType rowType) {
+                         RelNode input, IMatchNode pathPattern, RelDataType rowType,boolean isOptional) {
         super(cluster, traits, input);
         this.rowType = Objects.requireNonNull(rowType);
         this.pathPattern = Objects.requireNonNull(pathPattern);
+        this.isOptional = isOptional;
         validateInput(input);
     }
 
@@ -72,29 +77,47 @@ public abstract class GraphMatch extends SingleRel {
         }
     }
 
+    public boolean getIsOptional() {
+        return this.isOptional;
+    }
+
+    public void setIsOptional(boolean isOptional) {
+        this.isOptional = isOptional;
+    }
+
     public boolean canConcat(IMatchNode pathPattern) {
         return GQLRelUtil.isAllSingleMatch(this.pathPattern)
             && GQLRelUtil.isAllSingleMatch(pathPattern)
             && this.pathPattern.getPathSchema().canConcat(pathPattern.getPathSchema())
             ;
     }
-
+    public GraphMatch merge(IMatchNode pathPattern) {
+        return this.merge(pathPattern,this.isOptional);
+    }
     /**
      * Merge with a path pattern to generate a new graph match node.
      */
-    public GraphMatch merge(IMatchNode pathPattern) {
+    public GraphMatch merge(IMatchNode pathPattern,boolean isOptional) {
         if (canConcat(pathPattern)) {
             SingleMatchNode concatPathPattern = GQLRelUtil.concatPathPattern(
                 (SingleMatchNode) this.pathPattern, (SingleMatchNode) pathPattern, true);
 
-            return this.copy(getTraitSet(), input, concatPathPattern, concatPathPattern.getPathSchema());
+            return this.copy(getTraitSet(), input, concatPathPattern, concatPathPattern.getPathSchema(),isOptional);
         } else {
             RexNode condition = GQLRelUtil.createPathJoinCondition(this.pathPattern, pathPattern,
                 true, getCluster().getRexBuilder());
+            JoinRelType type;
+            // If either the current match or the new pattern is optional, use LEFT join
+            if (isOptional) {
+                type = JoinRelType.LEFT;
+            } else {
+                type = JoinRelType.INNER;
+            }
             MatchJoin join = MatchJoin.create(getCluster(), getTraitSet(),
-                this.pathPattern, pathPattern, condition, JoinRelType.INNER);
+                this.pathPattern, pathPattern, condition, type);
 
-            return this.copy(getTraitSet(), input, join, join.getRowType());
+            // If either the current match or the new pattern is optional, the result should be optional
+            return this.copy(getTraitSet(), input, join, join.getRowType(), isOptional);
         }
     }
 
@@ -115,7 +138,8 @@ public abstract class GraphMatch extends SingleRel {
             if (vertexMatch.getInput() != null) {
                 inputString = visit(vertexMatch.getInput());
             }
-            String nodeString = "(" + vertexMatch.getLabel() + ":"
+            String isOptional = vertexMatch instanceof OptionalVertexMatch ? "OPTIONAL " : "";
+            String nodeString = "(" + isOptional + vertexMatch.getLabel() + ":"
                 + StringUtils.join(vertexMatch.getTypes(), "|") + ")";
             return inputString + nodeString;
         }
@@ -127,6 +151,7 @@ public abstract class GraphMatch extends SingleRel {
                 inputString = visit(edgeMatch.getInput()) + "-";
             }
             String direction;
+            String isOptional = edgeMatch instanceof OptionalEdgeMatch ? "OPTIONAL " : "";
             switch (edgeMatch.getDirection()) {
                 case OUT:
                     direction = "->";
@@ -140,7 +165,7 @@ public abstract class GraphMatch extends SingleRel {
                 default:
                     throw new IllegalArgumentException("Illegal edge direction: " + edgeMatch.getDirection());
             }
-            String nodeString = "[" + edgeMatch.getLabel() + ":"
+            String nodeString = "[" + isOptional + edgeMatch.getLabel() + ":"
                 + StringUtils.join(edgeMatch.getTypes(), "|")
                 + "]" + direction;
             return inputString + nodeString;
@@ -161,7 +186,11 @@ public abstract class GraphMatch extends SingleRel {
 
         @Override
         public String visitJoin(MatchJoin join) {
-            return "{" + visit(join.getLeft()) + "} Join {" + visit(join.getRight()) + "}";
+            String joinType = "} Join {" ;
+            if (join.getJoinType() == JoinRelType.LEFT) {
+                joinType = "} LEFT Join {" ;
+            }
+            return "{" + visit(join.getLeft()) + joinType + visit(join.getRight()) + "}";
         }
 
         @Override
@@ -217,25 +246,25 @@ public abstract class GraphMatch extends SingleRel {
         return pathPattern;
     }
 
-    public abstract GraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType);
+    public abstract GraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType,boolean isOptional);
 
     public GraphMatch copy(IMatchNode pathPattern) {
-        return copy(traitSet, input, pathPattern, pathPattern.getRowType());
+        return copy(traitSet, input, pathPattern, pathPattern.getRowType(), this.isOptional);
     }
 
     @Override
     public GraphMatch copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.size() == 1;
-        return copy(traitSet, inputs.get(0), pathPattern, rowType);
+        return copy(traitSet, inputs.get(0), pathPattern, rowType, this.isOptional);
     }
 
     @Override
     public RelNode accept(RexShuttle shuttle) {
-        return copy(traitSet, input, (IMatchNode) pathPattern.accept(shuttle), rowType);
+        return copy(traitSet, input, (IMatchNode) pathPattern.accept(shuttle), rowType, this.isOptional);
     }
 
     @Override
     public RelNode accept(RelShuttle shuttle) {
-        return copy(traitSet, input, (IMatchNode) pathPattern.accept(shuttle), rowType);
+        return copy(traitSet, input, (IMatchNode) pathPattern.accept(shuttle), rowType, this.isOptional);
     }
 }

@@ -20,19 +20,28 @@
 package com.antgroup.geaflow.dsl.runtime.traversal.data;
 
 import com.antgroup.geaflow.dsl.common.data.Path;
+import com.antgroup.geaflow.dsl.common.data.RowEdge;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.EdgeTreePath;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.EmptyTreePath;
 import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath;
 import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath.PathFilterFunction;
 import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath.PathMapFunction;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.EmptyTreePath;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.TreePaths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 public class EdgeGroupRecord implements StepRecordWithPath {
 
     private final EdgeGroup edgeGroup;
+
+    private boolean isOptionalMatch;
 
     private final Map<Object, ITreePath> targetId2TreePaths;
 
@@ -83,6 +92,27 @@ public class EdgeGroupRecord implements StepRecordWithPath {
             filterEg = edgeGroup.filter(edge -> filterTreePaths.containsKey(edge.getTargetId()));
         }
         return new EdgeGroupRecord(filterEg, filterTreePaths);
+    }
+
+    @Override
+    public StepRecordWithPath filterOptional(PathFilterFunction function, int[] refPathIndices) {
+        // For OPTIONAL MATCH: preserve all records, but use filterOptional to replace
+        // filtered-out elements with null instead of removing them entirely
+        Map<Object, ITreePath> filterTreePaths = new HashMap<>();
+        for (Map.Entry<Object, ITreePath> entry : targetId2TreePaths.entrySet()) {
+            Object targetId = entry.getKey();
+            ITreePath treePath = entry.getValue();
+            // Use filterOptional to preserve path structure with null values
+            ITreePath filterPath = treePath.filterOptional(function, refPathIndices);
+
+            // Always include the path (even if it contains null values)
+            // This is the key difference from regular filter() which would skip empty paths
+            filterTreePaths.put(targetId, filterPath);
+        }
+
+        // For OPTIONAL MATCH, preserve the original EdgeGroup structure
+        // Don't filter out edges - keep all edges but with potentially null-filled paths
+        return new EdgeGroupRecord(edgeGroup, filterTreePaths);
     }
 
     @Override
@@ -147,5 +177,14 @@ public class EdgeGroupRecord implements StepRecordWithPath {
     @Override
     public StepRecordType getType() {
         return StepRecordType.EDGE_GROUP;
+    }
+
+    public boolean getIsOptionalMatch() {
+        return isOptionalMatch;
+    }
+
+    public boolean setIsOptionalMatch(boolean isOptionalMatch) {
+        this.isOptionalMatch = isOptionalMatch;
+        return isOptionalMatch;
     }
 }

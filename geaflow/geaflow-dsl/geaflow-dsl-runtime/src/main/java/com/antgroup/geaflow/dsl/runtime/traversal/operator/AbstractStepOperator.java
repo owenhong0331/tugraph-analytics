@@ -418,6 +418,14 @@ public abstract class AbstractStepOperator<FUNC extends StepFunction, IN extends
         outputTps.mark();
     }
 
+    protected void collect(OUT record, boolean isOptional) {
+        // System.out.print("collec23424t");
+        context.setInputOperatorId(id);
+        collector.collect(record, isOptional);
+        outputCounter.inc();
+        outputTps.mark();
+    }
+
     @SuppressWarnings("unchecked")
     protected void collectEOD(long callerOpId) {
         this.isGlobalEmptyCycle &= numProcessRecords == 0L;

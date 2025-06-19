@@ -72,13 +72,81 @@ public class StepNextCollector implements StepCollector<StepRecord> {
                 break;
             case EDGE_GROUP:
                 EdgeGroupRecord edgeGroupRecord = (EdgeGroupRecord) record;
-                Set<Object> targetIds = new HashSet<>();
-                for (RowEdge edge : edgeGroupRecord.getEdgeGroup()) {
-                    targetIds.add(edge.getTargetId());
+                boolean isOptionMatch = edgeGroupRecord.getIsOptionalMatch();
+                if (isOptionMatch) {
+                    for (Object targetId : edgeGroupRecord.getVertexIds()) {
+                        if (targetId != null) {
+                            // Normal case: send to specific target
+                            sendPathMessage(targetId, edgeGroupRecord.getPathById(targetId));
+                            sendRequest(targetId);
+                        } else {
+                            // OPTIONAL MATCH case: null targetId means no edge found
+                            // Send to current task (task 0) to handle null case
+                            sendPathMessage(0, edgeGroupRecord.getPathById(targetId));
+                            sendRequest(0);
+                        }
+                    }
+                } else {
+                    Set<Object> targetIds = new HashSet<>();
+                    for (RowEdge edge : edgeGroupRecord.getEdgeGroup()) {
+                        targetIds.add(edge.getTargetId());
+                    }
+                    for (Object targetId : targetIds) {
+                        sendPathMessage(targetId, edgeGroupRecord.getPathById(targetId));
+                        sendRequest(targetId);
+                    }
                 }
-                for (Object targetId : targetIds) {
-                    sendPathMessage(targetId, edgeGroupRecord.getPathById(targetId));
-                    sendRequest(targetId);
+                break;
+            case EOD:
+                EndOfData eod = (EndOfData) record;
+                // broadcast EOD to all the tasks.
+                context.broadcast(EODMessage.of(eod), receiverOpId);
+                break;
+            case KEY_RECORD:
+                StepKeyRecord keyRecord = (StepKeyRecord) record;
+                RowKey rowKey = keyRecord.getKey();
+                KeyGroupMessage keyGroupMessage = new KeyGroupMessageImpl(Lists.newArrayList(keyRecord.getValue()));
+                context.sendMessage(rowKey, keyGroupMessage, receiverOpId);
+                sendRequest(rowKey);
+                break;
+            default:
+                throw new IllegalArgumentException("Illegal record type: " + record.getType());
+        }
+    }
+
+    @Override
+    public void collect(StepRecord record,boolean isOptionMatch) {
+        System.out.print("whsfadfs");
+        switch (record.getType()) {
+            case VERTEX:
+                VertexRecord vertexRecord = (VertexRecord) record;
+                sendPathMessage(vertexRecord.getVertex().getId(), vertexRecord.getTreePath());
+                break;
+            case EDGE_GROUP:
+                EdgeGroupRecord edgeGroupRecord = (EdgeGroupRecord) record;
+                isOptionMatch = edgeGroupRecord.getIsOptionalMatch();
+                if (isOptionMatch) {
+                    for (Object targetId : edgeGroupRecord.getVertexIds()) {
+                        if (targetId != null) {
+                            // Normal case: send to specific target
+                            sendPathMessage(targetId, edgeGroupRecord.getPathById(targetId));
+                            sendRequest(targetId);
+                        } else {
+                            // OPTIONAL MATCH case: null targetId means no edge found
+                            // Send to current task (task 0) to handle null case
+                            sendPathMessage(0, edgeGroupRecord.getPathById(targetId));
+                            sendRequest(0);
+                        }
+                    }
+                } else {
+                    Set<Object> targetIds = new HashSet<>();
+                    for (RowEdge edge : edgeGroupRecord.getEdgeGroup()) {
+                        targetIds.add(edge.getTargetId());
+                    }
+                    for (Object targetId : targetIds) {
+                        sendPathMessage(targetId, edgeGroupRecord.getPathById(targetId));
+                        sendRequest(targetId);
+                    }
                 }
                 break;
             case EOD:

@@ -19,26 +19,55 @@
 
 package com.antgroup.geaflow.dsl.runtime.traversal.operator;
 
+import com.antgroup.geaflow.dsl.common.data.Path;
+import com.antgroup.geaflow.dsl.common.data.StepRecord.StepRecordType;
+import com.antgroup.geaflow.dsl.common.types.PathType;
 import com.antgroup.geaflow.dsl.runtime.function.graph.StepBoolFunction;
+import com.antgroup.geaflow.dsl.runtime.traversal.data.EdgeGroupRecord;
+import com.antgroup.geaflow.dsl.runtime.traversal.data.IdOnlyVertex;
 import com.antgroup.geaflow.dsl.runtime.traversal.data.StepRecordWithPath;
+import com.antgroup.geaflow.dsl.runtime.traversal.data.VertexRecord;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.ITreePath;
+import com.antgroup.geaflow.dsl.runtime.traversal.path.TreePaths;
+import com.antgroup.geaflow.dsl.runtime.util.SchemaUtil;
 import com.antgroup.geaflow.dsl.runtime.util.StepFunctionUtil;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class StepFilterOperator extends AbstractStepOperator<StepBoolFunction, StepRecordWithPath, StepRecordWithPath> {
 
     private final int[] refPathIndices;
+    private final boolean isOptional;
 
     public StepFilterOperator(long id, StepBoolFunction function) {
         super(id, function);
         this.refPathIndices = StepFunctionUtil.getRefPathIndices(function);
+        this.isOptional = function.isOptional();
     }
 
     @Override
     public void processRecord(StepRecordWithPath record) {
-        StepRecordWithPath filterRecord = record.filter(path -> function.filter(withParameter(path)), refPathIndices);
-        if (!filterRecord.isPathEmpty()) {
-            collect(filterRecord);
+        if (isOptional) {
+            // Optional match semantics following StepJoinOperator LEFT JOIN pattern:
+            // Compare original record with filtered record, and replace removed parts with null
+            StepRecordWithPath filterRecord = record.filterOptional(path -> function.filter(withParameter(path)), refPathIndices);
+
+            // Create optional result by merging original and filtered records
+            // This preserves the structure but replaces filtered-out parts with null values
+            collect(filterRecord,isOptional);
+        } else {
+            // Regular filtering behavior - only collect if filter passes
+            StepRecordWithPath filterRecord = record.filter(path -> function.filter(withParameter(path)), refPathIndices);
+            if (!filterRecord.isPathEmpty()) {
+                collect(filterRecord);
+            }
         }
     }
+
 
     @Override
     public StepOperator<StepRecordWithPath, StepRecordWithPath> copyInternal() {

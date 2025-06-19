@@ -39,12 +39,11 @@ public class ConvertGraphMatchRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalGraphMatch graphMatch = (LogicalGraphMatch) rel;
-
         RelTraitSet relTraitSet = graphMatch.getTraitSet().replace(PhysicConvention.INSTANCE);
         RelNode convertedInput = convert(graphMatch.getInput(),
             graphMatch.getInput().getTraitSet().replace(PhysicConvention.INSTANCE));
 
         return new PhysicGraphMatchRelNode(graphMatch.getCluster(), relTraitSet,
-            convertedInput, graphMatch.getPathPattern(), graphMatch.getRowType());
+            convertedInput, graphMatch.getPathPattern(), graphMatch.getRowType(),graphMatch.getIsOptional());
     }
 }

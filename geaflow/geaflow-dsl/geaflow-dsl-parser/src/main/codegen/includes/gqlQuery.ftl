@@ -1,33 +1,51 @@
+
+
+// 修改 GQLMatchStatement 以支持 OPTIONAL MATCH
 SqlCall GQLMatchStatement() :
 {
-      SqlCall statement = null;
+  SqlCall statement = null;
 }
 {
-      <MATCH> statement = SqlMatchPattern(statement)
-      (
+  (
+    <OPTIONAL> <MATCH> statement = SqlMatchPattern(statement,true) // 添加可选匹配
+    |
+    <MATCH> statement = SqlMatchPattern(statement,false)
+    
+    
+  )
+  (
+    (
+      statement = SqlLetStatement(statement) (<COMMA> statement = SqlLetStatement(statement))*
+      [
+        [ <NEXT> ]
         (
-          statement = SqlLetStatement(statement) (<COMMA> statement = SqlLetStatement(statement))*
-          [
-            [ <NEXT> ] <MATCH>
-            statement = SqlMatchPattern(statement)
-          ]
+          <OPTIONAL> <MATCH> statement = SqlMatchPattern(statement,true) // 添加可选匹配
+          |
+          <MATCH> statement = SqlMatchPattern(statement,false)
+          
         )
+      ]
+    )
+    |
+    (
+      [ <NEXT> ]
+      (
+        <OPTIONAL> <MATCH> statement = SqlMatchPattern(statement,true) // 添加可选匹配
         |
-        (
-           [ <NEXT> ] <MATCH>
-           statement = SqlMatchPattern(statement)
-        )
-      )*
-      (
-          statement = SqlReturn(statement)
-          [
-              <THEN>
-              statement = SqlFilter(statement)
-          ]
-      )*
-      {
-          return statement;
-      }
+        <MATCH> statement = SqlMatchPattern(statement,false)
+      )
+    )
+  )*
+  (
+    statement = SqlReturn(statement)
+    [
+      <THEN>
+      statement = SqlFilter(statement)
+    ]
+  )*
+  {
+    return statement;
+  }
 }
 
 SqlCall GQLGraphAlgorithmCall() :
@@ -357,7 +375,7 @@ SqlCall SqlUnionPathPattern() :
     }
 }
 
-SqlMatchPattern SqlMatchPattern(SqlNode preMatch) :
+SqlMatchPattern SqlMatchPattern(SqlNode preMatch,boolean is_optional) :
 {
     Span s = Span.of();
     List<SqlNode> pathList = new ArrayList<SqlNode>();
@@ -366,6 +384,7 @@ SqlMatchPattern SqlMatchPattern(SqlNode preMatch) :
     SqlNode condition = null;
     SqlNodeList orderBy = null;
     SqlNode count = null;
+    boolean optional=is_optional;
 }
 {
     pathPattern = SqlUnionPathPattern()  { pathList.add(pathPattern); }
@@ -387,9 +406,12 @@ SqlMatchPattern SqlMatchPattern(SqlNode preMatch) :
     ]
     {
         graphPattern = new SqlNodeList(pathList, s.addAll(pathList).pos());
-        return new SqlMatchPattern(s.end(this), preMatch, graphPattern, condition, orderBy, count);
+        return new SqlMatchPattern(s.end(this), preMatch, graphPattern, condition, orderBy, count,optional);
     }
 }
+
+
+
 
 SqlLetStatement SqlLetStatement(SqlNode from) :
 {

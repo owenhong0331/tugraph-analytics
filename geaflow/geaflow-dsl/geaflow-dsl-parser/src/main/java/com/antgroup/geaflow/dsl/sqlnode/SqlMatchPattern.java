@@ -43,7 +43,9 @@ public class SqlMatchPattern extends SqlCall {
     private SqlNodeList orderBy;
 
     private SqlNode limit;
-    
+
+    private boolean isoptional;
+
     public SqlMatchPattern(SqlParserPos pos, SqlNode from, SqlNodeList pathPatterns,
                            SqlNode where, SqlNodeList orderBy, SqlNode limit) {
         super(pos);
@@ -52,6 +54,18 @@ public class SqlMatchPattern extends SqlCall {
         this.where = where;
         this.orderBy = orderBy;
         this.limit = limit;
+        this.isoptional = false;
+    }
+    
+    public SqlMatchPattern(SqlParserPos pos, SqlNode from, SqlNodeList pathPatterns,
+                           SqlNode where, SqlNodeList orderBy, SqlNode limit,boolean isoptional) {
+        super(pos);
+        this.from = from;
+        this.pathPatterns = pathPatterns;
+        this.where = where;
+        this.orderBy = orderBy;
+        this.limit = limit;
+        this.isoptional = isoptional;
     }
 
     @Override
@@ -125,7 +139,12 @@ public class SqlMatchPattern extends SqlCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("Match");
+        if (isoptional == true) {
+            writer.keyword("Optional Match");
+        } else {
+            writer.keyword("Match");
+        }
+        
         if (pathPatterns != null) {
             for (int i = 0; i < pathPatterns.size(); i++) {
                 if (i > 0) {
@@ -154,6 +173,10 @@ public class SqlMatchPattern extends SqlCall {
             writer.keyword("LIMIT");
             limit.unparse(writer, leftPrec, rightPrec);
         }
+    }
+    
+    public boolean getIsOptional() {
+        return isoptional;
     }
 
     public SqlNodeList getPathPatterns() {

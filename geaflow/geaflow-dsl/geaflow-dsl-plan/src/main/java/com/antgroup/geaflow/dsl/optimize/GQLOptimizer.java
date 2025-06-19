@@ -103,7 +103,7 @@ public class GQLOptimizer {
             GraphMatch match = (GraphMatch) node;
             IMatchNode newPathPattern = (IMatchNode) applyRules(rules, match.getPathPattern());
             assert newInputs.size() == 1;
-            return match.copy(match.getTraitSet(), newInputs.get(0), newPathPattern, match.getRowType());
+            return match.copy(match.getTraitSet(), newInputs.get(0), newPathPattern, match.getRowType(),match.getIsOptional());
         }
         RelNode newNode = node.accept(new RexShuttle() {
             @Override

@@ -24,4 +24,5 @@ import com.antgroup.geaflow.dsl.common.data.StepRecord;
 public interface StepCollector<OUT extends StepRecord> {
 
     void collect(OUT record);
+    void collect(OUT record,boolean isOptionMatch);
 }

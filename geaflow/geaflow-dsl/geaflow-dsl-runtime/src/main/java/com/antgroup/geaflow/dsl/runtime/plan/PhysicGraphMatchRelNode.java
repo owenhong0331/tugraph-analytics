@@ -34,8 +34,8 @@ public class PhysicGraphMatchRelNode extends GraphMatch implements PhysicRelNode
                                    RelTraitSet traits,
                                    RelNode input,
                                    IMatchNode pathPattern,
-                                   RelDataType rowType) {
-        super(cluster, traits, input, pathPattern, rowType);
+                                   RelDataType rowType,boolean isOptional) {
+        super(cluster, traits, input, pathPattern, rowType,isOptional);
     }
 
     @SuppressWarnings("unchecked")
@@ -47,8 +47,8 @@ public class PhysicGraphMatchRelNode extends GraphMatch implements PhysicRelNode
     }
 
     @Override
-    public GraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType) {
-        return new PhysicGraphMatchRelNode(getCluster(), traitSet, input, pathPattern, rowType);
+    public GraphMatch copy(RelTraitSet traitSet, RelNode input, IMatchNode pathPattern, RelDataType rowType,boolean isOptional) {
+        return new PhysicGraphMatchRelNode(getCluster(), traitSet, input, pathPattern, rowType, isOptional);
     }
 
     @Override
